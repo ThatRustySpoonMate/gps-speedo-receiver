@@ -39,6 +39,14 @@ void setup() {
     while (true) { delay(10); }
   }
 
+  // LoRaRate_t config;
+  // config.spreadingFactor = 6; // 6-12
+  // config.bandwidth = 250.0;
+  // config.codingRate = 
+  radio.setBandwidth(250.0);
+  radio.setSpreadingFactor(6);
+  radio.setFrequency(915.0);
+
 
 }
 
@@ -56,9 +64,9 @@ void loop() {
     Serial.println("SPEED: " + String(packet.speed));
     Serial.println("HDOP: " + String(packet.hdop));
 
-    Serial.print(F("RSSI:\t\t\t"));
+    Serial.print(F("RSSI:"));
     Serial.print(radio.getRSSI());
-    Serial.println(F(" dBm"));
+    Serial.println(F(" dBm\n"));
     
 
   }
