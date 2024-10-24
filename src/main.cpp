@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include "spi.h"
 #include <RadioLib.h>
+#include "SSD1306Wire.h"
+
 
 #define CS      18     // GPIO18 -- SX1278's CS
 #define RST     14     // GPIO14 -- SX1278's RESET
@@ -22,6 +24,7 @@ typedef struct {
 
 /* Global variable defs */
 SX1276 radio = new Module(CS, DI0, RST);
+SSD1306Wire display(0x3c, SDA, SCL); // ADDRESS, SDA, SCL
 
 void setup() {
   Serial.begin(115200);
@@ -47,16 +50,19 @@ void setup() {
   radio.setSpreadingFactor(6);
   radio.setFrequency(915.0);
 
+  display.init();
+  display.flipScreenVertically();
 
 }
 
 void loop() {
+  static LoraMessage_t packet;
+  static int timeOfLastPacket;
+  static float maxSpeed;
+  int timeSinceLastPacket;
+
   int receiveResult = RADIOLIB_ERR_NONE;
-
-  LoraMessage_t packet;
   receiveResult = radio.receive((uint8_t *)&packet, sizeof(packet));
-  
-
 
   if (receiveResult == RADIOLIB_ERR_NONE) {
     Serial.println("Success! Received:");
@@ -67,25 +73,27 @@ void loop() {
     Serial.print(F("RSSI:"));
     Serial.print(radio.getRSSI());
     Serial.println(F(" dBm\n"));
-    
 
+    if(packet.speed > maxSpeed) {
+      maxSpeed = packet.speed;
+    }
+
+    timeOfLastPacket = millis();
   }
-  // else if (receiveResult == RADIOLIB_ERR_RX_TIMEOUT) {
-  //   // timeout occurred while waiting for a packet
-  //   Serial.println(F("timeout!"));
 
-  // } else if (receiveResult == RADIOLIB_ERR_CRC_MISMATCH) {
-  //   // packet was received, but is malformed
-  //   Serial.println(F("CRC error!"));
+  display.clear();
 
-  // } else {
-  //   // some other error occurred
-  //   Serial.print(F("failed, code "));
-  //   Serial.println(receiveResult);
+  timeSinceLastPacket = millis() - timeOfLastPacket;
+  display.drawString(0, 0, "Tp: " + String(timeSinceLastPacket));
+  display.drawString(0, 12, "Sp: " + String(packet.speed));
+  display.drawString(0, 24, "Sa: " + String(packet.sats));
+  display.drawString(0, 36, "Hd: " + String(packet.hdop));
+  display.drawString(0, 54, "RSSI: " + String(radio.getRSSI()));
+  display.drawString(64, 12, "MSp: " + String(maxSpeed));
 
-  // }
+  display.display();
 
-
+  //delay(20);
 
 }
 
